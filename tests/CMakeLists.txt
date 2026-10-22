@@ -18,6 +18,7 @@ set(BASE_LIBS
 # Adding a unit means adding one line here and one file in tests/.
 set(DML_TEST_SUITES
   dml
+  vector
 )
 
 include(GoogleTest)
