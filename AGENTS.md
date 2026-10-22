@@ -198,8 +198,9 @@ pull request.
 
 ```
 main     ●──────────────●────────        tags: v0.1.0, v0.2.0
-          \            /
-           \          /
+          ↑             ↑
+          └─── squash ──┘ release PR
+                     ╱
 dev        ●──●──●──●──●──●──●──●──●
 ```
 
@@ -218,16 +219,17 @@ Flow:
 3. Push and open a PR against `dev`.
 4. CI must be green before a PR is merged. Run the same checks locally first — the
    suite is fast.
-5. Release: merge `dev` into `main` (fast-forward), tag `vX.Y.Z` on `main`, then
-   continue on `dev`.
+5. Release: open a PR from `dev` into `main` and squash-merge it, then tag `vX.Y.Z` on
+   the merge commit. `main` is protected, so a release is a pull request like any other.
 
 Rules:
 
 - Never commit to `main` or `dev` directly. Always use a feature branch and a PR.
 - A merge is accepted only when CI is green.
+- Merge feature PRs into `dev` with a merge commit, so the granular history survives.
+  Squash-merge release PRs into `main`, so the release line stays readable.
 - The local `pre-push` hook runs the same checks as CI. Bypass with `--no-verify` only
   with a stated reason.
-- Keep `main` free of direct commits so `dev` can always fast-forward it.
 - Never force-push to `main` or `dev`.
 
 ## Working agreements
