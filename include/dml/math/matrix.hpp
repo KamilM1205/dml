@@ -18,8 +18,7 @@ namespace dml::math {
 // logical view is the transpose of that buffer, so transpose() is O(1) and never copies.
 // The physical shape is an implementation detail: rows() and cols() always report the
 // logical shape.
-template <std::floating_point T>
-class Matrix {
+template <std::floating_point T> class Matrix {
 public:
   using value_type = T;
   using shape_type = std::pair<std::size_t, std::size_t>;
@@ -41,9 +40,13 @@ public:
 
   Matrix(std::initializer_list<std::initializer_list<T>> rows) { assign_rows(rows); }
 
-  [[nodiscard]] std::size_t rows() const noexcept { return is_transposed_ ? phys_cols_ : phys_rows_; }
+  [[nodiscard]] std::size_t rows() const noexcept {
+    return is_transposed_ ? phys_cols_ : phys_rows_;
+  }
 
-  [[nodiscard]] std::size_t cols() const noexcept { return is_transposed_ ? phys_rows_ : phys_cols_; }
+  [[nodiscard]] std::size_t cols() const noexcept {
+    return is_transposed_ ? phys_rows_ : phys_cols_;
+  }
 
   [[nodiscard]] shape_type shape() const noexcept { return {rows(), cols()}; }
 
@@ -55,21 +58,21 @@ public:
 
   [[nodiscard]] bool is_transposed() const noexcept { return is_transposed_; }
 
-  [[nodiscard]] T& at(std::size_t row, std::size_t col) {
+  [[nodiscard]] T &at(std::size_t row, std::size_t col) {
     require_in_bounds(row, col);
     return data_[index_of(row, col)];
   }
 
-  [[nodiscard]] const T& at(std::size_t row, std::size_t col) const {
+  [[nodiscard]] const T &at(std::size_t row, std::size_t col) const {
     require_in_bounds(row, col);
     return data_[index_of(row, col)];
   }
 
-  [[nodiscard]] T& operator()(std::size_t row, std::size_t col) noexcept {
+  [[nodiscard]] T &operator()(std::size_t row, std::size_t col) noexcept {
     return data_[index_of(row, col)];
   }
 
-  [[nodiscard]] const T& operator()(std::size_t row, std::size_t col) const noexcept {
+  [[nodiscard]] const T &operator()(std::size_t row, std::size_t col) const noexcept {
     return data_[index_of(row, col)];
   }
 
@@ -87,9 +90,7 @@ public:
   [[nodiscard]] Matrix transpose_copy() const {
     Matrix result(cols(), rows());
     for (std::size_t i = 0; i < cols(); ++i) {
-      for (std::size_t j = 0; j < rows(); ++j) {
-        result(i, j) = at(j, i);
-      }
+      for (std::size_t j = 0; j < rows(); ++j) { result(i, j) = at(j, i); }
     }
     return result;
   }
@@ -98,9 +99,7 @@ public:
   [[nodiscard]] Matrix to_row_major() const {
     Matrix result(rows(), cols());
     for (std::size_t r = 0; r < rows(); ++r) {
-      for (std::size_t c = 0; c < cols(); ++c) {
-        result(r, c) = at(r, c);
-      }
+      for (std::size_t c = 0; c < cols(); ++c) { result(r, c) = at(r, c); }
     }
     return result;
   }
@@ -115,17 +114,13 @@ public:
 
   [[nodiscard]] static Matrix identity(std::size_t n) {
     Matrix result(n, n, T{});
-    for (std::size_t i = 0; i < n; ++i) {
-      result(i, i) = T{1};
-    }
+    for (std::size_t i = 0; i < n; ++i) { result(i, i) = T{1}; }
     return result;
   }
 
   [[nodiscard]] T sum() const {
     T total{};
-    for (const T value : data_) {
-      total += value;
-    }
+    for (const T value : data_) { total += value; }
     return total;
   }
 
@@ -137,9 +132,7 @@ public:
       Matrix result(1, cols());
       for (std::size_t c = 0; c < cols(); ++c) {
         T total{};
-        for (std::size_t r = 0; r < rows(); ++r) {
-          total += at(r, c);
-        }
+        for (std::size_t r = 0; r < rows(); ++r) { total += at(r, c); }
         result(0, c) = total;
       }
       return result;
@@ -148,9 +141,7 @@ public:
       Matrix result(rows(), 1);
       for (std::size_t r = 0; r < rows(); ++r) {
         T total{};
-        for (std::size_t c = 0; c < cols(); ++c) {
-          total += at(r, c);
-        }
+        for (std::size_t c = 0; c < cols(); ++c) { total += at(r, c); }
         result(r, 0) = total;
       }
       return result;
@@ -165,16 +156,12 @@ public:
       throw std::invalid_argument("dml::math::Matrix::determinant: the matrix must be square");
     }
     const std::size_t n = rows();
-    if (n == 0) {
-      return T{1};
-    }
+    if (n == 0) { return T{1}; }
     std::vector<T> work = logical_row_major();
     T sign{1};
     for (std::size_t k = 0; k < n; ++k) {
       const std::size_t pivot_row = select_pivot(work, n, k);
-      if (pivot_row == n) {
-        return T{0};
-      }
+      if (pivot_row == n) { return T{0}; }
       if (pivot_row != k) {
         swap_rows(work, n, k, pivot_row);
         sign = -sign;
@@ -182,15 +169,11 @@ public:
       for (std::size_t r = k + 1; r < n; ++r) {
         const T factor = work[r * n + k] / work[k * n + k];
         work[r * n + k] = factor;
-        for (std::size_t c = k + 1; c < n; ++c) {
-          work[r * n + c] -= factor * work[k * n + c];
-        }
+        for (std::size_t c = k + 1; c < n; ++c) { work[r * n + c] -= factor * work[k * n + c]; }
       }
     }
     T result = sign;
-    for (std::size_t k = 0; k < n; ++k) {
-      result *= work[k * n + k];
-    }
+    for (std::size_t k = 0; k < n; ++k) { result *= work[k * n + k]; }
     return result;
   }
 
@@ -200,9 +183,7 @@ public:
       throw std::invalid_argument("dml::math::Matrix::inverse: the matrix must be square");
     }
     const std::size_t n = rows();
-    if (n == 0) {
-      return Matrix();
-    }
+    if (n == 0) { return Matrix(); }
     const std::size_t width = 2 * n;
     std::vector<T> work(width * n, T{});
     for (std::size_t r = 0; r < n; ++r) {
@@ -216,21 +197,13 @@ public:
       if (pivot_row == n) {
         throw std::domain_error("dml::math::Matrix::inverse: the matrix is singular");
       }
-      if (pivot_row != col) {
-        swap_rows(work, width, col, pivot_row);
-      }
+      if (pivot_row != col) { swap_rows(work, width, col, pivot_row); }
       const T pivot = work[col * width + col];
-      for (std::size_t c = 0; c < width; ++c) {
-        work[col * width + c] /= pivot;
-      }
+      for (std::size_t c = 0; c < width; ++c) { work[col * width + c] /= pivot; }
       for (std::size_t r = 0; r < n; ++r) {
-        if (r == col) {
-          continue;
-        }
+        if (r == col) { continue; }
         const T factor = work[r * width + col];
-        if (factor == T{}) {
-          continue;
-        }
+        if (factor == T{}) { continue; }
         for (std::size_t c = 0; c < width; ++c) {
           work[r * width + c] -= factor * work[col * width + c];
         }
@@ -238,66 +211,52 @@ public:
     }
     Matrix result(n, n);
     for (std::size_t r = 0; r < n; ++r) {
-      for (std::size_t c = 0; c < n; ++c) {
-        result(r, c) = work[r * width + n + c];
-      }
+      for (std::size_t c = 0; c < n; ++c) { result(r, c) = work[r * width + n + c]; }
     }
     return result;
   }
 
-  Matrix& operator+=(const Matrix& other) {
+  Matrix &operator+=(const Matrix &other) {
     require_same_shape(other);
     for (std::size_t r = 0; r < rows(); ++r) {
-      for (std::size_t c = 0; c < cols(); ++c) {
-        (*this)(r, c) += other(r, c);
-      }
+      for (std::size_t c = 0; c < cols(); ++c) { (*this)(r, c) += other(r, c); }
     }
     return *this;
   }
 
-  Matrix& operator-=(const Matrix& other) {
+  Matrix &operator-=(const Matrix &other) {
     require_same_shape(other);
     for (std::size_t r = 0; r < rows(); ++r) {
-      for (std::size_t c = 0; c < cols(); ++c) {
-        (*this)(r, c) -= other(r, c);
-      }
+      for (std::size_t c = 0; c < cols(); ++c) { (*this)(r, c) -= other(r, c); }
     }
     return *this;
   }
 
-  Matrix& operator*=(T scalar) {
-    for (T& value : data_) {
-      value *= scalar;
-    }
+  Matrix &operator*=(T scalar) {
+    for (T &value : data_) { value *= scalar; }
     return *this;
   }
 
-  Matrix& operator/=(T scalar) {
+  Matrix &operator/=(T scalar) {
     require_nonzero(scalar);
-    for (T& value : data_) {
-      value /= scalar;
-    }
+    for (T &value : data_) { value /= scalar; }
     return *this;
   }
 
 private:
   // The logical view in row-major order. Free when the matrix is not transposed.
   [[nodiscard]] std::vector<T> logical_row_major() const {
-    if (!is_transposed_) {
-      return data_;
-    }
+    if (!is_transposed_) { return data_; }
     std::vector<T> result(data_.size());
     for (std::size_t r = 0; r < rows(); ++r) {
-      for (std::size_t c = 0; c < cols(); ++c) {
-        result[r * cols() + c] = at(r, c);
-      }
+      for (std::size_t c = 0; c < cols(); ++c) { result[r * cols() + c] = at(r, c); }
     }
     return result;
   }
 
   // Returns the row with the largest magnitude in the given column, or n when the
   // column is numerically zero.
-  [[nodiscard]] std::size_t select_pivot(const std::vector<T>& work, std::size_t width,
+  [[nodiscard]] std::size_t select_pivot(const std::vector<T> &work, std::size_t width,
                                          std::size_t col) const {
     std::size_t best = col;
     T best_magnitude = std::abs(work[col * width + col]);
@@ -308,47 +267,36 @@ private:
         best = r;
       }
     }
-    if (best_magnitude <= tolerance()) {
-      return rows();
-    }
+    if (best_magnitude <= tolerance()) { return rows(); }
     return best;
   }
 
-  static void swap_rows(std::vector<T>& work, std::size_t width, std::size_t a,
-                         std::size_t b) {
-    for (std::size_t c = 0; c < width; ++c) {
-      std::swap(work[a * width + c], work[b * width + c]);
-    }
+  static void swap_rows(std::vector<T> &work, std::size_t width, std::size_t a, std::size_t b) {
+    for (std::size_t c = 0; c < width; ++c) { std::swap(work[a * width + c], work[b * width + c]); }
   }
 
   // A pivot below this magnitude means the matrix is singular. The threshold is
   // relative to the largest magnitude in the matrix.
   [[nodiscard]] T tolerance() const {
     T scale{};
-    for (const T value : data_) {
-      scale = std::max(scale, std::abs(value));
-    }
+    for (const T value : data_) { scale = std::max(scale, std::abs(value)); }
     return std::numeric_limits<T>::epsilon() * static_cast<T>(rows()) * scale;
   }
 
-  void require_same_shape(const Matrix& other) const {
+  void require_same_shape(const Matrix &other) const {
     if (rows() != other.rows() || cols() != other.cols()) {
       throw std::invalid_argument("dml::math::Matrix: shape mismatch");
     }
   }
 
   static void require_nonzero(T scalar) {
-    if (scalar == T{}) {
-      throw std::domain_error("dml::math::Matrix: division by zero");
-    }
+    if (scalar == T{}) { throw std::domain_error("dml::math::Matrix: division by zero"); }
   }
 
   void assign_rows(std::initializer_list<std::initializer_list<T>> rows) {
-    if (rows.size() == 0) {
-      return;
-    }
+    if (rows.size() == 0) { return; }
     const std::size_t cols = rows.begin()->size();
-    for (const auto& row : rows) {
+    for (const auto &row : rows) {
       if (row.size() != cols) {
         throw std::invalid_argument("dml::math::Matrix: rows must have equal length");
       }
@@ -356,9 +304,7 @@ private:
     phys_rows_ = rows.size();
     phys_cols_ = cols;
     data_.reserve(phys_rows_ * phys_cols_);
-    for (const auto& row : rows) {
-      data_.insert(data_.end(), row.begin(), row.end());
-    }
+    for (const auto &row : rows) { data_.insert(data_.end(), row.begin(), row.end()); }
   }
 
   void require_in_bounds(std::size_t row, std::size_t col) const {
@@ -378,44 +324,41 @@ private:
 };
 
 template <std::floating_point T>
-[[nodiscard]] Matrix<T> operator+(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+[[nodiscard]] Matrix<T> operator+(const Matrix<T> &lhs, const Matrix<T> &rhs) {
   Matrix<T> result(lhs);
   result += rhs;
   return result;
 }
 
 template <std::floating_point T>
-[[nodiscard]] Matrix<T> operator-(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+[[nodiscard]] Matrix<T> operator-(const Matrix<T> &lhs, const Matrix<T> &rhs) {
   Matrix<T> result(lhs);
   result -= rhs;
   return result;
 }
 
-template <std::floating_point T>
-[[nodiscard]] Matrix<T> operator-(const Matrix<T>& value) {
+template <std::floating_point T> [[nodiscard]] Matrix<T> operator-(const Matrix<T> &value) {
   Matrix<T> result(value);
   for (std::size_t r = 0; r < value.rows(); ++r) {
-    for (std::size_t c = 0; c < value.cols(); ++c) {
-      result(r, c) = -value(r, c);
-    }
+    for (std::size_t c = 0; c < value.cols(); ++c) { result(r, c) = -value(r, c); }
   }
   return result;
 }
 
 template <std::floating_point T>
-[[nodiscard]] Matrix<T> operator*(const Matrix<T>& value, T scalar) {
+[[nodiscard]] Matrix<T> operator*(const Matrix<T> &value, T scalar) {
   Matrix<T> result(value);
   result *= scalar;
   return result;
 }
 
 template <std::floating_point T>
-[[nodiscard]] Matrix<T> operator*(T scalar, const Matrix<T>& value) {
+[[nodiscard]] Matrix<T> operator*(T scalar, const Matrix<T> &value) {
   return value * scalar;
 }
 
 template <std::floating_point T>
-[[nodiscard]] Matrix<T> operator/(const Matrix<T>& value, T scalar) {
+[[nodiscard]] Matrix<T> operator/(const Matrix<T> &value, T scalar) {
   Matrix<T> result(value);
   result /= scalar;
   return result;
@@ -424,7 +367,7 @@ template <std::floating_point T>
 // The matrix product, in row-major order: result[i][j] = sum_k lhs[i][k] * rhs[k][j].
 // Both operands are read through their logical view, so a transposed operand works.
 template <std::floating_point T>
-[[nodiscard]] Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+[[nodiscard]] Matrix<T> operator*(const Matrix<T> &lhs, const Matrix<T> &rhs) {
   if (lhs.cols() != rhs.rows()) {
     throw std::invalid_argument("dml::math::Matrix: incompatible shapes for multiplication");
   }
@@ -432,9 +375,7 @@ template <std::floating_point T>
   for (std::size_t i = 0; i < lhs.rows(); ++i) {
     for (std::size_t j = 0; j < rhs.cols(); ++j) {
       T sum{};
-      for (std::size_t k = 0; k < lhs.cols(); ++k) {
-        sum += lhs(i, k) * rhs(k, j);
-      }
+      for (std::size_t k = 0; k < lhs.cols(); ++k) { sum += lhs(i, k) * rhs(k, j); }
       result(i, j) = sum;
     }
   }
@@ -442,15 +383,11 @@ template <std::floating_point T>
 }
 
 template <std::floating_point T>
-[[nodiscard]] bool operator==(const Matrix<T>& lhs, const Matrix<T>& rhs) {
-  if (lhs.shape() != rhs.shape()) {
-    return false;
-  }
+[[nodiscard]] bool operator==(const Matrix<T> &lhs, const Matrix<T> &rhs) {
+  if (lhs.shape() != rhs.shape()) { return false; }
   for (std::size_t r = 0; r < lhs.rows(); ++r) {
     for (std::size_t c = 0; c < lhs.cols(); ++c) {
-      if (lhs(r, c) != rhs(r, c)) {
-        return false;
-      }
+      if (lhs(r, c) != rhs(r, c)) { return false; }
     }
   }
   return true;

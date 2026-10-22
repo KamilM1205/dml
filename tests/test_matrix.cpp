@@ -15,7 +15,9 @@ using Matrix = dml::math::Matrix<double>;
 
 constexpr double kEps = 1e-12;
 
-bool nearly_equal(double a, double b) { return std::abs(a - b) < kEps; }
+bool nearly_equal(double a, double b) {
+  return std::abs(a - b) < kEps;
+}
 
 } // namespace
 
@@ -36,9 +38,7 @@ TEST(TestMatrix, SizedConstructionFillsZeros) {
   EXPECT_EQ(m.size(), 6u);
   EXPECT_FALSE(m.empty());
   for (std::size_t r = 0; r < m.rows(); ++r) {
-    for (std::size_t c = 0; c < m.cols(); ++c) {
-      EXPECT_TRUE(nearly_equal(m.at(r, c), 0.0));
-    }
+    for (std::size_t c = 0; c < m.cols(); ++c) { EXPECT_TRUE(nearly_equal(m.at(r, c), 0.0)); }
   }
 }
 
@@ -61,8 +61,7 @@ TEST(TestMatrix, DataAndShapeConstruction) {
 TEST(TestMatrix, DataAndShapeRejectsWrongLength) {
   const std::vector<double> source{1.0, 2.0, 3.0};
 
-  EXPECT_THROW(Matrix(std::span<const double>{source}, 2, 3),
-               std::invalid_argument);
+  EXPECT_THROW(Matrix(std::span<const double>{source}, 2, 3), std::invalid_argument);
 }
 
 TEST(TestMatrix, InitializerListOfRows) {
@@ -115,9 +114,7 @@ TEST(TestMatrix, FillSetsEveryElement) {
   m.fill(-1.5);
 
   for (std::size_t r = 0; r < m.rows(); ++r) {
-    for (std::size_t c = 0; c < m.cols(); ++c) {
-      EXPECT_TRUE(nearly_equal(m.at(r, c), -1.5));
-    }
+    for (std::size_t c = 0; c < m.cols(); ++c) { EXPECT_TRUE(nearly_equal(m.at(r, c), -1.5)); }
   }
 }
 
@@ -267,9 +264,7 @@ TEST(TestMatrix, FillOnATransposedMatrixWritesLogicalElements) {
   m.fill(0.0);
 
   for (std::size_t r = 0; r < m.rows(); ++r) {
-    for (std::size_t c = 0; c < m.cols(); ++c) {
-      EXPECT_TRUE(nearly_equal(m.at(r, c), 0.0));
-    }
+    for (std::size_t c = 0; c < m.cols(); ++c) { EXPECT_TRUE(nearly_equal(m.at(r, c), 0.0)); }
   }
 }
 

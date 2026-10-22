@@ -12,7 +12,9 @@ namespace {
 
 constexpr double kEps = 1e-12;
 
-bool nearly_equal(double a, double b) { return std::abs(a - b) < kEps; }
+bool nearly_equal(double a, double b) {
+  return std::abs(a - b) < kEps;
+}
 
 } // namespace
 
@@ -79,9 +81,7 @@ TEST(TestVector, FillSetsEveryElement) {
 
   v.fill(0.25);
 
-  for (std::size_t i = 0; i < v.size(); ++i) {
-    EXPECT_TRUE(nearly_equal(v[i], 0.25));
-  }
+  for (std::size_t i = 0; i < v.size(); ++i) { EXPECT_TRUE(nearly_equal(v[i], 0.25)); }
 }
 
 TEST(TestVector, CopyIsIndependent) {
