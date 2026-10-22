@@ -163,3 +163,121 @@ TEST(TestMatrix, StorageIsRowMajor) {
   EXPECT_TRUE(nearly_equal(buffer[0], 1.0));
   EXPECT_TRUE(nearly_equal(buffer[3], 4.0));
 }
+
+TEST(TestMatrix, TransposeSwapsShape) {
+  Matrix m(2, 3);
+
+  m.transpose();
+
+  EXPECT_EQ(m.shape(), (std::pair<std::size_t, std::size_t>{3, 2}));
+}
+
+TEST(TestMatrix, TransposePreservesValues) {
+  Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+
+  m.transpose();
+
+  EXPECT_TRUE(nearly_equal(m.at(0, 0), 1.0));
+  EXPECT_TRUE(nearly_equal(m.at(0, 1), 4.0));
+  EXPECT_TRUE(nearly_equal(m.at(1, 0), 2.0));
+  EXPECT_TRUE(nearly_equal(m.at(2, 1), 6.0));
+}
+
+TEST(TestMatrix, DoubleTransposeRestoresOriginal) {
+  Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+
+  m.transpose();
+  m.transpose();
+
+  EXPECT_EQ(m.shape(), (std::pair<std::size_t, std::size_t>{2, 3}));
+  EXPECT_TRUE(nearly_equal(m.at(1, 2), 6.0));
+  EXPECT_FALSE(m.is_transposed());
+}
+
+TEST(TestMatrix, IsTransposedReportsState) {
+  Matrix m(2, 3);
+
+  EXPECT_FALSE(m.is_transposed());
+  m.transpose();
+  EXPECT_TRUE(m.is_transposed());
+}
+
+TEST(TestMatrix, TransposeKeepsTheSameBuffer) {
+  Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  const std::span<const double> before = m.storage();
+
+  m.transpose();
+
+  const std::span<const double> after = m.storage();
+  ASSERT_EQ(after.size(), before.size());
+  EXPECT_TRUE(nearly_equal(after[0], before[0]));
+  EXPECT_TRUE(nearly_equal(after[5], before[5]));
+}
+
+TEST(TestMatrix, TransposeCopyMaterializesTheTranspose) {
+  Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+
+  const Matrix copy = m.transpose_copy();
+
+  EXPECT_EQ(copy.shape(), (std::pair<std::size_t, std::size_t>{3, 2}));
+  EXPECT_FALSE(copy.is_transposed());
+  EXPECT_TRUE(nearly_equal(copy.at(0, 1), 4.0));
+  EXPECT_TRUE(nearly_equal(copy.at(2, 1), 6.0));
+}
+
+TEST(TestMatrix, TransposeCopyOfATransposedMatrixUndoesTheTranspose) {
+  Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  m.transpose();
+
+  const Matrix copy = m.transpose_copy();
+
+  EXPECT_EQ(copy.shape(), (std::pair<std::size_t, std::size_t>{2, 3}));
+  EXPECT_TRUE(nearly_equal(copy.at(0, 2), 3.0));
+  EXPECT_TRUE(nearly_equal(copy.at(1, 0), 4.0));
+}
+
+TEST(TestMatrix, ToRowMajorMaterializesTheLogicalOrder) {
+  Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  m.transpose();
+
+  const Matrix row_major = m.to_row_major();
+
+  EXPECT_EQ(row_major.shape(), (std::pair<std::size_t, std::size_t>{3, 2}));
+  EXPECT_FALSE(row_major.is_transposed());
+  EXPECT_TRUE(nearly_equal(row_major.at(0, 0), 1.0));
+  EXPECT_TRUE(nearly_equal(row_major.at(0, 1), 4.0));
+  EXPECT_TRUE(nearly_equal(row_major.at(1, 0), 2.0));
+}
+
+TEST(TestMatrix, TransposedMatrixChecksBoundsAgainstTheLogicalShape) {
+  Matrix m(2, 3);
+  m.transpose();
+
+  ASSERT_EQ(m.shape(), (std::pair<std::size_t, std::size_t>{3, 2}));
+  EXPECT_THROW(static_cast<void>(m.at(3, 0)), std::out_of_range);
+  EXPECT_THROW(static_cast<void>(m.at(0, 2)), std::out_of_range);
+}
+
+TEST(TestMatrix, FillOnATransposedMatrixWritesLogicalElements) {
+  Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  m.transpose();
+
+  m.fill(0.0);
+
+  for (std::size_t r = 0; r < m.rows(); ++r) {
+    for (std::size_t c = 0; c < m.cols(); ++c) {
+      EXPECT_TRUE(nearly_equal(m.at(r, c), 0.0));
+    }
+  }
+}
+
+TEST(TestMatrix, CopyOfATransposedMatrixKeepsItsOrientation) {
+  Matrix original{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  original.transpose();
+
+  const Matrix copy = original;
+
+  EXPECT_TRUE(copy.is_transposed());
+  EXPECT_EQ(copy.shape(), (std::pair<std::size_t, std::size_t>{3, 2}));
+  EXPECT_TRUE(nearly_equal(copy.at(0, 1), 4.0));
+}
