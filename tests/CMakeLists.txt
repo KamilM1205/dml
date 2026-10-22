@@ -14,15 +14,17 @@ set(BASE_LIBS
   dml::dml
 )
 
-add_executable(
-  test_vector
-  ${CMAKE_CURRENT_LIST_DIR}/test_vector.cpp
+# One executable per test suite, named test_<suite>, from tests/test_<suite>.cpp.
+# Adding a unit means adding one line here and one file in tests/.
+set(DML_TEST_SUITES
+  dml
 )
-target_link_libraries(
-  test_vector
-  ${BASE_LIBS}
-)
-target_compile_options(test_vector PRIVATE ${DML_WARNING_FLAGS})
 
 include(GoogleTest)
-gtest_discover_tests(test_vector)
+
+foreach(suite IN LISTS DML_TEST_SUITES)
+  add_executable(test_${suite} ${CMAKE_CURRENT_LIST_DIR}/test_${suite}.cpp)
+  target_link_libraries(test_${suite} PRIVATE ${BASE_LIBS})
+  target_compile_options(test_${suite} PRIVATE ${DML_WARNING_FLAGS})
+  gtest_discover_tests(test_${suite})
+endforeach()

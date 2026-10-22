@@ -118,7 +118,9 @@ byte locally, run `pipx install clang-format==23.1.3`.
 
 ## Build
 
-Requires CMake >= 4.0 and a C++20 compiler (Apple clang 21 or GCC 12+).
+Requires CMake >= 3.20 and a C++20 compiler (Apple clang 21 or GCC 12+). The minimum
+CMake version is deliberately low: the library must build on the CMake that ships with
+Ubuntu 22.04 (3.22) and Debian 12 (3.25), not only on the newest release.
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -177,8 +179,9 @@ suite names exactly.
 To add a new unit:
 
 1. Create `tests/test_<unit>.cpp`.
-2. Add a `test_<unit>` executable in `tests/CMakeLists.txt`, linking `dml::dml` and
-   `GTest::gtest_main`, and register it with `gtest_discover_tests`.
+2. Add `<unit>` to `DML_TEST_SUITES` in `tests/CMakeLists.txt`. One line, one file —
+   the executable, the link, the warning flags, and the CTest registration are all
+   derived from it.
 3. Run the suite and make sure it passes.
 
 `enable_testing()` must stay in the **top-level** `CMakeLists.txt`, not in
