@@ -2,6 +2,8 @@
 
 #include <dml/math/matrix.hpp>
 
+#include <dml/math/vector.hpp>
+
 #include <initializer_list>
 #include <span>
 #include <stdexcept>
@@ -499,4 +501,27 @@ TEST(TestMatrix, InverseOfANonSquareMatrixIsRejected) {
   const Matrix m(2, 3);
 
   EXPECT_THROW(static_cast<void>(m.inverse()), std::invalid_argument);
+}
+
+TEST(TestMatrix, ToVectorFlattensInRowMajorOrder) {
+  const Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+
+  const dml::math::Vector<double> flat = dml::math::to_vector(m);
+
+  ASSERT_EQ(flat.size(), 6u);
+  EXPECT_TRUE(nearly_equal(flat[0], 1.0));
+  EXPECT_TRUE(nearly_equal(flat[3], 4.0));
+  EXPECT_TRUE(nearly_equal(flat[5], 6.0));
+}
+
+TEST(TestMatrix, ToVectorOfATransposedMatrixUsesTheLogicalOrder) {
+  Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  m.transpose();
+
+  const dml::math::Vector<double> flat = dml::math::to_vector(m);
+
+  ASSERT_EQ(flat.size(), 6u);
+  EXPECT_TRUE(nearly_equal(flat[0], 1.0));
+  EXPECT_TRUE(nearly_equal(flat[1], 4.0));
+  EXPECT_TRUE(nearly_equal(flat[2], 2.0));
 }

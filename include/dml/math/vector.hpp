@@ -1,6 +1,8 @@
 #ifndef DML_MATH_VECTOR_HPP
 #define DML_MATH_VECTOR_HPP
 
+#include <dml/math/matrix.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <concepts>
@@ -55,6 +57,23 @@ public:
   [[nodiscard]] std::span<T> data() noexcept { return {data_.data(), data_.size()}; }
 
   [[nodiscard]] std::span<const T> data() const noexcept { return {data_.data(), data_.size()}; }
+
+  // A vector is a column vector, so its transpose is the row form.
+  [[nodiscard]] Matrix<T> transpose() const {
+    Matrix<T> result(1, size());
+    for (std::size_t i = 0; i < size(); ++i) {
+      result(0, i) = data_[i];
+    }
+    return result;
+  }
+
+  [[nodiscard]] Matrix<T> to_column_matrix() const {
+    Matrix<T> result(size(), 1);
+    for (std::size_t i = 0; i < size(); ++i) {
+      result(i, 0) = data_[i];
+    }
+    return result;
+  }
 
   Vector& operator+=(const Vector& other) {
     require_same_size(other);
@@ -203,6 +222,35 @@ template <std::floating_point T>
     }
   }
   return true;
+}
+
+// Flattens the logical view of a matrix in row-major order.
+template <std::floating_point T>
+[[nodiscard]] Vector<T> to_vector(const Matrix<T>& matrix) {
+  Vector<T> result(matrix.size());
+  for (std::size_t r = 0; r < matrix.rows(); ++r) {
+    for (std::size_t c = 0; c < matrix.cols(); ++c) {
+      result[r * matrix.cols() + c] = matrix(r, c);
+    }
+  }
+  return result;
+}
+
+// The matrix-vector product: result[i] = sum_c matrix[i][c] * vector[c].
+template <std::floating_point T>
+[[nodiscard]] Vector<T> operator*(const Matrix<T>& matrix, const Vector<T>& vector) {
+  if (matrix.cols() != vector.size()) {
+    throw std::invalid_argument("dml::math: matrix and vector shapes do not match");
+  }
+  Vector<T> result(matrix.rows());
+  for (std::size_t r = 0; r < matrix.rows(); ++r) {
+    T total{};
+    for (std::size_t c = 0; c < matrix.cols(); ++c) {
+      total += matrix(r, c) * vector[c];
+    }
+    result[r] = total;
+  }
+  return result;
 }
 
 } // namespace dml::math

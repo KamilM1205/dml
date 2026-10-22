@@ -225,3 +225,53 @@ TEST(TestVector, EqualityComparesElements) {
   EXPECT_FALSE(a == c);
   EXPECT_FALSE(a == dml::math::Vector<double>{1.0});
 }
+
+TEST(TestVector, TransposeProducesARowMatrix) {
+  const dml::math::Vector<double> v{1.0, 2.0, 3.0};
+
+  const dml::math::Matrix<double> row = v.transpose();
+
+  ASSERT_EQ(row.shape(), (std::pair<std::size_t, std::size_t>{1, 3}));
+  EXPECT_TRUE(nearly_equal(row.at(0, 0), 1.0));
+  EXPECT_TRUE(nearly_equal(row.at(0, 2), 3.0));
+}
+
+TEST(TestVector, ToColumnMatrixProducesAColumnMatrix) {
+  const dml::math::Vector<double> v{1.0, 2.0, 3.0};
+
+  const dml::math::Matrix<double> column = v.to_column_matrix();
+
+  ASSERT_EQ(column.shape(), (std::pair<std::size_t, std::size_t>{3, 1}));
+  EXPECT_TRUE(nearly_equal(column.at(0, 0), 1.0));
+  EXPECT_TRUE(nearly_equal(column.at(2, 0), 3.0));
+}
+
+TEST(TestVector, MatrixTimesVectorProducesAVector) {
+  const dml::math::Matrix<double> m{{1.0, 2.0}, {3.0, 4.0}};
+  const dml::math::Vector<double> v{1.0, 1.0};
+
+  const dml::math::Vector<double> result = m * v;
+
+  ASSERT_EQ(result.size(), 2u);
+  EXPECT_TRUE(nearly_equal(result[0], 3.0));
+  EXPECT_TRUE(nearly_equal(result[1], 7.0));
+}
+
+TEST(TestVector, MatrixTimesVectorRequiresMatchingRows) {
+  const dml::math::Matrix<double> m(2, 3);
+  const dml::math::Vector<double> v{1.0, 1.0};
+
+  EXPECT_THROW(static_cast<void>(m * v), std::invalid_argument);
+}
+
+TEST(TestVector, MatrixTimesATransposedVectorUsesTheLogicalView) {
+  dml::math::Matrix<double> m{{1.0, 2.0}, {3.0, 4.0}};
+  m.transpose();
+  const dml::math::Vector<double> v{1.0, 1.0};
+
+  const dml::math::Vector<double> result = m * v;
+
+  ASSERT_EQ(result.size(), 2u);
+  EXPECT_TRUE(nearly_equal(result[0], 4.0));
+  EXPECT_TRUE(nearly_equal(result[1], 6.0));
+}
