@@ -18,8 +18,9 @@ GoogleTest is used for testing and CMake for building.
 
 The library is two layers, and dependencies point strictly downward:
 
-- `math/` — `Matrix<T>` and `Vector<T>`. Pure numerics: shape, transpose, elementwise
-  operations, matrix multiplication, reductions. Knows nothing about neural networks.
+- `math/` — `Matrix<T>` and `Vector<T>`. Pure numerics: shape, lazy transpose, elementwise
+  operations, matrix multiplication, reductions, determinant, inverse. Knows nothing
+  about neural networks.
 - `nn/` — `Tensor<T>`, `Layer<T>`, `Optimizer<T>`, and the concrete architectures.
   May use `math/`; `math/` must never depend on `nn/`.
 
