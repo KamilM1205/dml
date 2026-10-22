@@ -1,0 +1,31 @@
+# Build output
+build/
+build-*/
+cmake-build-*/
+out/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+_deps/
+compile_commands.json
+
+# clangd / clang tooling cache
+.cache/
+*.clangd
+
+# Editor and OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local Python tooling (pinned clang-format)
+.venv/
+venv/

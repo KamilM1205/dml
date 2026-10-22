@@ -1,0 +1,54 @@
+---
+# clang-format configuration for the dml library.
+#
+# Base style is LLVM (the "clang standard"), with a 100-column limit.
+# Formatting is enforced by the `format` and `check-format` CMake targets.
+# Run: cmake --build build --target format
+Language: Cpp
+BasedOnStyle: LLVM
+
+# Layout
+ColumnLimit: 100
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ContinuationIndentWidth: 4
+AlignAfterOpenBracket: Align
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Always
+MaxEmptyLinesToKeep: 1
+
+# Braces and spacing
+BreakBeforeBraces: Attach
+SpaceAfterCStyleCast: false
+SpacesBeforeTrailingComments: 1
+SpaceBeforeParens: ControlStatements
+
+# Includes
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+IncludeCategories:
+  - Regex: '^<dml/.*>'
+    Priority: 1
+  - Regex: '^<.*\.h(pp)?>'
+    Priority: 2
+  - Regex: '^<.*>'
+    Priority: 3
+  - Regex: '.*'
+    Priority: 4
+
+# Pointers and references
+DerivePointerAlignment: false
+PointerAlignment: Right
+ReferenceAlignment: Pointer
+
+# Namespaces
+NamespaceIndentation: None
+FixNamespaceComments: true
+CompactNamespaces: false
+
+# Macros
+IndentPPDirectives: AfterHash
+...

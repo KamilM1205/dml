@@ -1,0 +1,19 @@
+set(SRC
+  dml.cpp
+)
+
+list(TRANSFORM SRC PREPEND ${CMAKE_CURRENT_LIST_DIR}/)
+
+if(${DML_BUILD_TYPE} STREQUAL "STATIC")
+  set(LIB_BUILD_TYPE STATIC)
+elseif(${DML_BUILD_TYPE} STREQUAL "SHARED")
+  set(LIB_BUILD_TYPE SHARED)
+else()
+  message(FATAL_ERROR "Incorrect DML_BUILD_TYPE value.")
+endif()
+
+add_library(${PROJECT_NAME} ${LIB_BUILD_TYPE} ${SRC})
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}
+  PUBLIC ${PROJECT_SOURCE_DIR}/include/)
+target_compile_options(${PROJECT_NAME} PRIVATE ${DML_WARNING_FLAGS})
