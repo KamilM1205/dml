@@ -119,7 +119,54 @@ public:
     return result;
   }
 
+  Matrix& operator+=(const Matrix& other) {
+    require_same_shape(other);
+    for (std::size_t r = 0; r < rows(); ++r) {
+      for (std::size_t c = 0; c < cols(); ++c) {
+        (*this)(r, c) += other(r, c);
+      }
+    }
+    return *this;
+  }
+
+  Matrix& operator-=(const Matrix& other) {
+    require_same_shape(other);
+    for (std::size_t r = 0; r < rows(); ++r) {
+      for (std::size_t c = 0; c < cols(); ++c) {
+        (*this)(r, c) -= other(r, c);
+      }
+    }
+    return *this;
+  }
+
+  Matrix& operator*=(T scalar) {
+    for (T& value : data_) {
+      value *= scalar;
+    }
+    return *this;
+  }
+
+  Matrix& operator/=(T scalar) {
+    require_nonzero(scalar);
+    for (T& value : data_) {
+      value /= scalar;
+    }
+    return *this;
+  }
+
 private:
+  void require_same_shape(const Matrix& other) const {
+    if (rows() != other.rows() || cols() != other.cols()) {
+      throw std::invalid_argument("dml::math::Matrix: shape mismatch");
+    }
+  }
+
+  static void require_nonzero(T scalar) {
+    if (scalar == T{}) {
+      throw std::domain_error("dml::math::Matrix: division by zero");
+    }
+  }
+
   void assign_rows(std::initializer_list<std::initializer_list<T>> rows) {
     if (rows.size() == 0) {
       return;
@@ -153,6 +200,85 @@ private:
   bool is_transposed_ = false;
   std::vector<T> data_;
 };
+
+template <std::floating_point T>
+[[nodiscard]] Matrix<T> operator+(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+  Matrix<T> result(lhs);
+  result += rhs;
+  return result;
+}
+
+template <std::floating_point T>
+[[nodiscard]] Matrix<T> operator-(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+  Matrix<T> result(lhs);
+  result -= rhs;
+  return result;
+}
+
+template <std::floating_point T>
+[[nodiscard]] Matrix<T> operator-(const Matrix<T>& value) {
+  Matrix<T> result(value);
+  for (std::size_t r = 0; r < value.rows(); ++r) {
+    for (std::size_t c = 0; c < value.cols(); ++c) {
+      result(r, c) = -value(r, c);
+    }
+  }
+  return result;
+}
+
+template <std::floating_point T>
+[[nodiscard]] Matrix<T> operator*(const Matrix<T>& value, T scalar) {
+  Matrix<T> result(value);
+  result *= scalar;
+  return result;
+}
+
+template <std::floating_point T>
+[[nodiscard]] Matrix<T> operator*(T scalar, const Matrix<T>& value) {
+  return value * scalar;
+}
+
+template <std::floating_point T>
+[[nodiscard]] Matrix<T> operator/(const Matrix<T>& value, T scalar) {
+  Matrix<T> result(value);
+  result /= scalar;
+  return result;
+}
+
+// The matrix product, in row-major order: result[i][j] = sum_k lhs[i][k] * rhs[k][j].
+// Both operands are read through their logical view, so a transposed operand works.
+template <std::floating_point T>
+[[nodiscard]] Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+  if (lhs.cols() != rhs.rows()) {
+    throw std::invalid_argument("dml::math::Matrix: incompatible shapes for multiplication");
+  }
+  Matrix<T> result(lhs.rows(), rhs.cols());
+  for (std::size_t i = 0; i < lhs.rows(); ++i) {
+    for (std::size_t j = 0; j < rhs.cols(); ++j) {
+      T sum{};
+      for (std::size_t k = 0; k < lhs.cols(); ++k) {
+        sum += lhs(i, k) * rhs(k, j);
+      }
+      result(i, j) = sum;
+    }
+  }
+  return result;
+}
+
+template <std::floating_point T>
+[[nodiscard]] bool operator==(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+  if (lhs.shape() != rhs.shape()) {
+    return false;
+  }
+  for (std::size_t r = 0; r < lhs.rows(); ++r) {
+    for (std::size_t c = 0; c < lhs.cols(); ++c) {
+      if (lhs(r, c) != rhs(r, c)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
 } // namespace dml::math
 

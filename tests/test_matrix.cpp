@@ -281,3 +281,123 @@ TEST(TestMatrix, CopyOfATransposedMatrixKeepsItsOrientation) {
   EXPECT_EQ(copy.shape(), (std::pair<std::size_t, std::size_t>{3, 2}));
   EXPECT_TRUE(nearly_equal(copy.at(0, 1), 4.0));
 }
+
+TEST(TestMatrix, AdditionIsElementwise) {
+  const Matrix a{{1.0, 2.0}, {3.0, 4.0}};
+  const Matrix b{{10.0, 20.0}, {30.0, 40.0}};
+
+  const Matrix sum = a + b;
+
+  ASSERT_EQ(sum.shape(), (std::pair<std::size_t, std::size_t>{2, 2}));
+  EXPECT_TRUE(nearly_equal(sum.at(0, 1), 22.0));
+  EXPECT_TRUE(nearly_equal(sum.at(1, 0), 33.0));
+}
+
+TEST(TestMatrix, AdditionRequiresTheSameShape) {
+  const Matrix a(2, 2);
+  const Matrix b(2, 3);
+
+  EXPECT_THROW(static_cast<void>(a + b), std::invalid_argument);
+}
+
+TEST(TestMatrix, SubtractionIsElementwise) {
+  const Matrix a{{5.0, 7.0}, {9.0, 11.0}};
+  const Matrix b{{1.0, 2.0}, {3.0, 4.0}};
+
+  const Matrix difference = a - b;
+
+  EXPECT_TRUE(nearly_equal(difference.at(0, 0), 4.0));
+  EXPECT_TRUE(nearly_equal(difference.at(1, 1), 7.0));
+}
+
+TEST(TestMatrix, UnaryNegationFlipsSign) {
+  const Matrix a{{1.0, -2.0}, {3.0, -4.0}};
+
+  const Matrix negated = -a;
+
+  EXPECT_TRUE(nearly_equal(negated.at(0, 0), -1.0));
+  EXPECT_TRUE(nearly_equal(negated.at(1, 1), 4.0));
+}
+
+TEST(TestMatrix, ScalarMultiplicationAndDivision) {
+  const Matrix a{{1.0, 2.0}, {3.0, 4.0}};
+
+  const Matrix scaled = a * 3.0;
+  const Matrix divided = scaled / 3.0;
+
+  EXPECT_TRUE(nearly_equal(scaled.at(1, 0), 9.0));
+  EXPECT_TRUE(nearly_equal(divided.at(1, 0), 3.0));
+}
+
+TEST(TestMatrix, DivisionByZeroIsRejected) {
+  const Matrix a(2, 2);
+
+  EXPECT_THROW(static_cast<void>(a / 0.0), std::domain_error);
+}
+
+TEST(TestMatrix, CompoundAssignmentMutatesInPlace) {
+  Matrix a{{1.0, 2.0}, {3.0, 4.0}};
+  const Matrix b{{10.0, 20.0}, {30.0, 40.0}};
+
+  a += b;
+  a -= b;
+  a *= 2.0;
+  a /= 2.0;
+
+  EXPECT_TRUE(nearly_equal(a.at(0, 0), 1.0));
+  EXPECT_TRUE(nearly_equal(a.at(1, 1), 4.0));
+}
+
+TEST(TestMatrix, ProductMultipliesRowsByColumns) {
+  const Matrix a{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  const Matrix b{{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}};
+
+  const Matrix product = a * b;
+
+  ASSERT_EQ(product.shape(), (std::pair<std::size_t, std::size_t>{2, 2}));
+  EXPECT_TRUE(nearly_equal(product.at(0, 0), 22.0));
+  EXPECT_TRUE(nearly_equal(product.at(0, 1), 28.0));
+  EXPECT_TRUE(nearly_equal(product.at(1, 0), 49.0));
+  EXPECT_TRUE(nearly_equal(product.at(1, 1), 64.0));
+}
+
+TEST(TestMatrix, ProductRequiresMatchingInnerDimension) {
+  const Matrix a(2, 3);
+  const Matrix b(2, 2);
+
+  EXPECT_THROW(static_cast<void>(a * b), std::invalid_argument);
+}
+
+TEST(TestMatrix, ProductWithIdentityLeavesTheMatrixUnchanged) {
+  const Matrix a{{1.0, 2.0}, {3.0, 4.0}};
+
+  const Matrix product = a * Matrix::identity(2);
+
+  EXPECT_TRUE(nearly_equal(product.at(0, 0), 1.0));
+  EXPECT_TRUE(nearly_equal(product.at(1, 1), 4.0));
+}
+
+TEST(TestMatrix, ProductWithATransposedOperandUsesTheLogicalView) {
+  const Matrix a{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  Matrix b{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+  b.transpose();
+
+  const Matrix product = a * b;
+
+  ASSERT_EQ(product.shape(), (std::pair<std::size_t, std::size_t>{2, 2}));
+  EXPECT_TRUE(nearly_equal(product.at(0, 0), 14.0));
+  EXPECT_TRUE(nearly_equal(product.at(0, 1), 32.0));
+  EXPECT_TRUE(nearly_equal(product.at(1, 0), 32.0));
+  EXPECT_TRUE(nearly_equal(product.at(1, 1), 77.0));
+  EXPECT_TRUE(product == a * b.to_row_major());
+}
+
+TEST(TestMatrix, EqualityComparesTheLogicalView) {
+  const Matrix a{{1.0, 2.0}, {3.0, 4.0}};
+  Matrix transposed{{1.0, 3.0}, {2.0, 4.0}};
+  transposed.transpose();
+
+  EXPECT_TRUE(a == transposed);
+  EXPECT_FALSE((a == Matrix{{1.0, 2.0}, {3.0, 5.0}}));
+  EXPECT_FALSE(a == Matrix(2, 3));
+}
