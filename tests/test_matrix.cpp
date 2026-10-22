@@ -401,3 +401,102 @@ TEST(TestMatrix, EqualityComparesTheLogicalView) {
   EXPECT_FALSE((a == Matrix{{1.0, 2.0}, {3.0, 5.0}}));
   EXPECT_FALSE(a == Matrix(2, 3));
 }
+
+TEST(TestMatrix, SumOfAllElements) {
+  const Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+
+  EXPECT_TRUE(nearly_equal(m.sum(), 21.0));
+}
+
+TEST(TestMatrix, SumAlongAxisZeroCollapsesRows) {
+  const Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+
+  const Matrix column_sums = m.sum(0);
+
+  ASSERT_EQ(column_sums.shape(), (std::pair<std::size_t, std::size_t>{1, 3}));
+  EXPECT_TRUE(nearly_equal(column_sums.at(0, 0), 5.0));
+  EXPECT_TRUE(nearly_equal(column_sums.at(0, 1), 7.0));
+  EXPECT_TRUE(nearly_equal(column_sums.at(0, 2), 9.0));
+}
+
+TEST(TestMatrix, SumAlongAxisOneCollapsesColumns) {
+  const Matrix m{{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+
+  const Matrix row_sums = m.sum(1);
+
+  ASSERT_EQ(row_sums.shape(), (std::pair<std::size_t, std::size_t>{2, 1}));
+  EXPECT_TRUE(nearly_equal(row_sums.at(0, 0), 6.0));
+  EXPECT_TRUE(nearly_equal(row_sums.at(1, 0), 15.0));
+}
+
+TEST(TestMatrix, SumRejectsAnUnknownAxis) {
+  const Matrix m(2, 2);
+
+  EXPECT_THROW(static_cast<void>(m.sum(2)), std::invalid_argument);
+}
+
+TEST(TestMatrix, DeterminantOfASingleElement) {
+  const Matrix m{{4.0}};
+
+  EXPECT_TRUE(nearly_equal(m.determinant(), 4.0));
+}
+
+TEST(TestMatrix, DeterminantOfTwoByTwo) {
+  const Matrix m{{1.0, 2.0}, {3.0, 4.0}};
+
+  EXPECT_TRUE(nearly_equal(m.determinant(), -2.0));
+}
+
+TEST(TestMatrix, DeterminantOfThreeByThree) {
+  const Matrix m{{6.0, 1.0, 1.0}, {4.0, -2.0, 5.0}, {2.0, 8.0, 7.0}};
+
+  EXPECT_TRUE(nearly_equal(m.determinant(), -306.0));
+}
+
+TEST(TestMatrix, DeterminantOfANonSquareMatrixIsRejected) {
+  const Matrix m(2, 3);
+
+  EXPECT_THROW(static_cast<void>(m.determinant()), std::invalid_argument);
+}
+
+TEST(TestMatrix, InverseOfTwoByTwo) {
+  const Matrix m{{1.0, 2.0}, {3.0, 4.0}};
+
+  const Matrix inverse = m.inverse();
+
+  ASSERT_EQ(inverse.shape(), (std::pair<std::size_t, std::size_t>{2, 2}));
+  EXPECT_TRUE(nearly_equal(inverse.at(0, 0), -2.0));
+  EXPECT_TRUE(nearly_equal(inverse.at(0, 1), 1.0));
+  EXPECT_TRUE(nearly_equal(inverse.at(1, 0), 1.5));
+  EXPECT_TRUE(nearly_equal(inverse.at(1, 1), -0.5));
+}
+
+TEST(TestMatrix, InverseOfIdentityIsIdentity) {
+  const Matrix inverse = Matrix::identity(3).inverse();
+
+  EXPECT_TRUE(nearly_equal(inverse.at(0, 1), 0.0));
+  EXPECT_TRUE(nearly_equal(inverse.at(2, 2), 1.0));
+}
+
+TEST(TestMatrix, InverseTimesOriginalIsTheIdentity) {
+  const Matrix m{{4.0, 7.0}, {2.0, 6.0}};
+
+  const Matrix product = m.inverse() * m;
+
+  EXPECT_TRUE(nearly_equal(product.at(0, 0), 1.0));
+  EXPECT_TRUE(nearly_equal(product.at(0, 1), 0.0));
+  EXPECT_TRUE(nearly_equal(product.at(1, 0), 0.0));
+  EXPECT_TRUE(nearly_equal(product.at(1, 1), 1.0));
+}
+
+TEST(TestMatrix, InverseOfASingularMatrixIsRejected) {
+  const Matrix m{{1.0, 2.0}, {2.0, 4.0}};
+
+  EXPECT_THROW(static_cast<void>(m.inverse()), std::domain_error);
+}
+
+TEST(TestMatrix, InverseOfANonSquareMatrixIsRejected) {
+  const Matrix m(2, 3);
+
+  EXPECT_THROW(static_cast<void>(m.inverse()), std::invalid_argument);
+}

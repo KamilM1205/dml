@@ -2,9 +2,11 @@
 #define DML_MATH_MATRIX_HPP
 
 #include <algorithm>
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <initializer_list>
+#include <limits>
 #include <span>
 #include <stdexcept>
 #include <utility>
@@ -119,6 +121,130 @@ public:
     return result;
   }
 
+  [[nodiscard]] T sum() const {
+    T total{};
+    for (const T value : data_) {
+      total += value;
+    }
+    return total;
+  }
+
+  // Axis 0 collapses the rows, giving one sum per column. Axis 1 collapses the
+  // columns, giving one sum per row. The reduced axis is kept, so the result
+  // stays a matrix.
+  [[nodiscard]] Matrix sum(std::size_t axis) const {
+    if (axis == 0) {
+      Matrix result(1, cols());
+      for (std::size_t c = 0; c < cols(); ++c) {
+        T total{};
+        for (std::size_t r = 0; r < rows(); ++r) {
+          total += at(r, c);
+        }
+        result(0, c) = total;
+      }
+      return result;
+    }
+    if (axis == 1) {
+      Matrix result(rows(), 1);
+      for (std::size_t r = 0; r < rows(); ++r) {
+        T total{};
+        for (std::size_t c = 0; c < cols(); ++c) {
+          total += at(r, c);
+        }
+        result(r, 0) = total;
+      }
+      return result;
+    }
+    throw std::invalid_argument("dml::math::Matrix::sum: axis must be 0 or 1");
+  }
+
+  // LU decomposition with partial pivoting, so the result stays accurate for
+  // matrices that need row swaps.
+  [[nodiscard]] T determinant() const {
+    if (!is_square()) {
+      throw std::invalid_argument("dml::math::Matrix::determinant: the matrix must be square");
+    }
+    const std::size_t n = rows();
+    if (n == 0) {
+      return T{1};
+    }
+    std::vector<T> work = logical_row_major();
+    T sign{1};
+    for (std::size_t k = 0; k < n; ++k) {
+      const std::size_t pivot_row = select_pivot(work, n, k);
+      if (pivot_row == n) {
+        return T{0};
+      }
+      if (pivot_row != k) {
+        swap_rows(work, n, k, pivot_row);
+        sign = -sign;
+      }
+      for (std::size_t r = k + 1; r < n; ++r) {
+        const T factor = work[r * n + k] / work[k * n + k];
+        work[r * n + k] = factor;
+        for (std::size_t c = k + 1; c < n; ++c) {
+          work[r * n + c] -= factor * work[k * n + c];
+        }
+      }
+    }
+    T result = sign;
+    for (std::size_t k = 0; k < n; ++k) {
+      result *= work[k * n + k];
+    }
+    return result;
+  }
+
+  // Gauss-Jordan elimination on [A | I], which yields [I | A^-1] directly.
+  [[nodiscard]] Matrix inverse() const {
+    if (!is_square()) {
+      throw std::invalid_argument("dml::math::Matrix::inverse: the matrix must be square");
+    }
+    const std::size_t n = rows();
+    if (n == 0) {
+      return Matrix();
+    }
+    const std::size_t width = 2 * n;
+    std::vector<T> work(width * n, T{});
+    for (std::size_t r = 0; r < n; ++r) {
+      for (std::size_t c = 0; c < n; ++c) {
+        work[r * width + c] = at(r, c);
+        work[r * width + n + c] = r == c ? T{1} : T{0};
+      }
+    }
+    for (std::size_t col = 0; col < n; ++col) {
+      const std::size_t pivot_row = select_pivot(work, width, col);
+      if (pivot_row == n) {
+        throw std::domain_error("dml::math::Matrix::inverse: the matrix is singular");
+      }
+      if (pivot_row != col) {
+        swap_rows(work, width, col, pivot_row);
+      }
+      const T pivot = work[col * width + col];
+      for (std::size_t c = 0; c < width; ++c) {
+        work[col * width + c] /= pivot;
+      }
+      for (std::size_t r = 0; r < n; ++r) {
+        if (r == col) {
+          continue;
+        }
+        const T factor = work[r * width + col];
+        if (factor == T{}) {
+          continue;
+        }
+        for (std::size_t c = 0; c < width; ++c) {
+          work[r * width + c] -= factor * work[col * width + c];
+        }
+      }
+    }
+    Matrix result(n, n);
+    for (std::size_t r = 0; r < n; ++r) {
+      for (std::size_t c = 0; c < n; ++c) {
+        result(r, c) = work[r * width + n + c];
+      }
+    }
+    return result;
+  }
+
   Matrix& operator+=(const Matrix& other) {
     require_same_shape(other);
     for (std::size_t r = 0; r < rows(); ++r) {
@@ -155,6 +281,56 @@ public:
   }
 
 private:
+  // The logical view in row-major order. Free when the matrix is not transposed.
+  [[nodiscard]] std::vector<T> logical_row_major() const {
+    if (!is_transposed_) {
+      return data_;
+    }
+    std::vector<T> result(data_.size());
+    for (std::size_t r = 0; r < rows(); ++r) {
+      for (std::size_t c = 0; c < cols(); ++c) {
+        result[r * cols() + c] = at(r, c);
+      }
+    }
+    return result;
+  }
+
+  // Returns the row with the largest magnitude in the given column, or n when the
+  // column is numerically zero.
+  [[nodiscard]] std::size_t select_pivot(const std::vector<T>& work, std::size_t width,
+                                         std::size_t col) const {
+    std::size_t best = col;
+    T best_magnitude = std::abs(work[col * width + col]);
+    for (std::size_t r = col + 1; r < rows(); ++r) {
+      const T magnitude = std::abs(work[r * width + col]);
+      if (magnitude > best_magnitude) {
+        best_magnitude = magnitude;
+        best = r;
+      }
+    }
+    if (best_magnitude <= tolerance()) {
+      return rows();
+    }
+    return best;
+  }
+
+  static void swap_rows(std::vector<T>& work, std::size_t width, std::size_t a,
+                         std::size_t b) {
+    for (std::size_t c = 0; c < width; ++c) {
+      std::swap(work[a * width + c], work[b * width + c]);
+    }
+  }
+
+  // A pivot below this magnitude means the matrix is singular. The threshold is
+  // relative to the largest magnitude in the matrix.
+  [[nodiscard]] T tolerance() const {
+    T scale{};
+    for (const T value : data_) {
+      scale = std::max(scale, std::abs(value));
+    }
+    return std::numeric_limits<T>::epsilon() * static_cast<T>(rows()) * scale;
+  }
+
   void require_same_shape(const Matrix& other) const {
     if (rows() != other.rows() || cols() != other.cols()) {
       throw std::invalid_argument("dml::math::Matrix: shape mismatch");
