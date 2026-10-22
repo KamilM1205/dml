@@ -118,7 +118,9 @@ byte locally, run `pipx install clang-format==23.1.3`.
 
 ## Build
 
-Requires CMake >= 4.0 and a C++20 compiler (Apple clang 21 or GCC 12+).
+Requires CMake >= 3.20 and a C++20 compiler (Apple clang 21 or GCC 12+). The minimum
+CMake version is deliberately low: the library must build on the CMake that ships with
+Ubuntu 22.04 (3.22) and Debian 12 (3.25), not only on the newest release.
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
