@@ -19,6 +19,7 @@ set(BASE_LIBS
 set(DML_TEST_SUITES
   dml
   vector
+  matrix
 )
 
 include(GoogleTest)
