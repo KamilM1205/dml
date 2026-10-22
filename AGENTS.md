@@ -118,7 +118,9 @@ byte locally, run `pipx install clang-format==23.1.3`.
 
 ## Build
 
-Requires CMake >= 4.0 and a C++20 compiler (Apple clang 21 or GCC 12+).
+Requires CMake >= 3.20 and a C++20 compiler (Apple clang 21 or GCC 12+). The minimum
+CMake version is deliberately low: the library must build on the CMake that ships with
+Ubuntu 22.04 (3.22) and Debian 12 (3.25), not only on the newest release.
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -177,8 +179,9 @@ suite names exactly.
 To add a new unit:
 
 1. Create `tests/test_<unit>.cpp`.
-2. Add a `test_<unit>` executable in `tests/CMakeLists.txt`, linking `dml::dml` and
-   `GTest::gtest_main`, and register it with `gtest_discover_tests`.
+2. Add `<unit>` to `DML_TEST_SUITES` in `tests/CMakeLists.txt`. One line, one file —
+   the executable, the link, the warning flags, and the CTest registration are all
+   derived from it.
 3. Run the suite and make sure it passes.
 
 `enable_testing()` must stay in the **top-level** `CMakeLists.txt`, not in
@@ -195,8 +198,9 @@ pull request.
 
 ```
 main     ●──────────────●────────        tags: v0.1.0, v0.2.0
-          \            /
-           \          /
+          ↑             ↑
+          └─── squash ──┘ release PR
+                     ╱
 dev        ●──●──●──●──●──●──●──●──●
 ```
 
@@ -215,16 +219,17 @@ Flow:
 3. Push and open a PR against `dev`.
 4. CI must be green before a PR is merged. Run the same checks locally first — the
    suite is fast.
-5. Release: merge `dev` into `main` (fast-forward), tag `vX.Y.Z` on `main`, then
-   continue on `dev`.
+5. Release: open a PR from `dev` into `main` and squash-merge it, then tag `vX.Y.Z` on
+   the merge commit. `main` is protected, so a release is a pull request like any other.
 
 Rules:
 
 - Never commit to `main` or `dev` directly. Always use a feature branch and a PR.
 - A merge is accepted only when CI is green.
+- Merge feature PRs into `dev` with a merge commit, so the granular history survives.
+  Squash-merge release PRs into `main`, so the release line stays readable.
 - The local `pre-push` hook runs the same checks as CI. Bypass with `--no-verify` only
   with a stated reason.
-- Keep `main` free of direct commits so `dev` can always fast-forward it.
 - Never force-push to `main` or `dev`.
 
 ## Working agreements
